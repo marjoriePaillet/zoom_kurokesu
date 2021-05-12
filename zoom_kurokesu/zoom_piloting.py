@@ -86,6 +86,13 @@ class ZoomController:
         self.ser.write(bytes(command + '\n', 'utf8'))
         _ = self.ser.readline()
 
+    def _send_custom_command_two_cameras(self, zoom: int, focus: int):
+        mot_left = self.motors[self.connector['left']]
+        mot_right = self.motors[self.connector['right']]
+        command = f'G1 {mot_left["zoom"]}{zoom} {mot_left["focus"]}{focus} {mot_right["zoom"]}{zoom} {mot_right["focus"]}{focus} F{self.speed}'
+        self.ser.write(bytes(command + '\n', 'utf8'))
+        _ = self.ser.readline()
+
     def send_custom_zoom_two_cameras(self, left_zoom: int, right_zoom: int):
         """Send custom zoom values to both cameras.
 
@@ -145,6 +152,30 @@ class ZoomController:
         time.sleep(1)
 
         cmd = 'G92 ' + mot['zoom'] + '0 ' + mot['focus'] + '0'
+        self.ser.write(bytes(cmd + '\n', 'utf8'))
+        _ = self.ser.readline()
+        time.sleep(0.1)
+
+    def homing_two_cameras(self,) -> None:
+        """Use serial port to perform homing sequence on both cameras.
+
+        Args:
+            side: 'right', 'left'.
+        """
+        mot_left = self.motors[self.connector['left']]
+        mot_right = self.motors[self.connector['right']]
+
+        cmd = 'G92 ' + mot_left['zoom'] + '0 ' + mot_left['focus'] + '0' + mot_right['zoom'] + '0 ' + mot_right['focus'] + '0'
+        self.ser.write(bytes(cmd + '\n', 'utf8'))
+        _ = self.ser.readline()
+        time.sleep(0.1)
+
+        self._send_custom_command_two_cameras(0, -500)
+        time.sleep(1)
+        self._send_custom_command_two_cameras(-600, -500)
+        time.sleep(1)
+
+        cmd = 'G92 ' + mot_left['zoom'] + '0 ' + mot_left['focus'] + '0' + mot_right['zoom'] + '0 ' + mot_right['focus'] + '0'
         self.ser.write(bytes(cmd + '\n', 'utf8'))
         _ = self.ser.readline()
         time.sleep(0.1)
