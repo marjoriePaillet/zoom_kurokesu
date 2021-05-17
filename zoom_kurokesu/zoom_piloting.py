@@ -126,6 +126,37 @@ class ZoomController:
         self.ser.write(bytes(command + '\n', 'utf8'))
         _ = self.ser.readline()
 
+    def send_synchronous_custom_commands(self, camera: list, zoom: list, focus: list):
+        """Send custom zoom and focus values to multiple cameras.
+
+        Given as many zoom and focus value as name in camera list,
+        produce the corresponding G-code and send it over the serial port.
+        motors will move at once
+        zoom and focus at index i refer to camera at index i in list
+
+        Args:
+            camera: string list, can contain "left" and/or "right" value
+            zoom: int list between 0 and 600
+            zoom: int list between 0 and 600
+        """
+        command = 'G1'
+        if (len(camera) != len(zoom) or len(camera) != len(focus)):
+            raise ValueError('list objects must have same size')
+
+        success = True
+        for i in range(len(camera)):
+            try:
+                mot = self.motors[self.connector[camera[i]]]
+            except KeyError:
+                success = False
+                raise ValueError(camera[i] + " camera name doesn't exist")
+            command += f' {mot["zoom"]}{zoom[i]} {mot["focus"]}{focus[i]} '
+
+        if success:
+            command += f'F{self.speed}'
+            self.ser.write(bytes(command + '\n', 'utf8'))
+            _ = self.ser.readline()
+
     def homing(self, side: str) -> None:
         """Use serial port to perform homing sequence on given camera.
 
