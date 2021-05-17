@@ -157,6 +157,48 @@ class ZoomController:
             self.ser.write(bytes(command + '\n', 'utf8'))
             _ = self.ser.readline()
 
+    def multiple_synchronous_homing(self, camera: list) -> None:
+        """Use serial port to perform homing sequence on cameras in camera list.
+
+        Args:
+            camera: string list, can contain "left" and/or "right" values
+        """
+        zoom1 = []
+        zoom2 = []
+        focus1 = []
+
+        command = 'G92 '
+
+        success = True
+        for i in range(len(camera)):
+            try:
+                mot = self.motors[self.connector[camera[i]]]
+            except KeyError:
+                success = False
+                raise ValueError(camera[i] + " camera name doesn't exist")
+            command += mot['zoom'] + '0 ' + mot['focus'] + '0 '
+            zoom1.append(0)
+            focus1.append(-500)
+            zoom2.append(-600)
+
+        if success:
+            try:
+
+                self.ser.write(bytes(command + '\n', 'utf8'))
+                _ = self.ser.readline()
+                time.sleep(0.1)
+            except Exception as e:
+                print(e)
+
+            self.send_synchronous_custom_commands(camera, zoom1, focus1)
+            time.sleep(1)
+            self.send_synchronous_custom_commands(camera, zoom2, focus1)
+            time.sleep(1)
+
+            self.ser.write(bytes(command + '\n', 'utf8'))
+            _ = self.ser.readline()
+            time.sleep(0.1)
+
     def homing(self, side: str) -> None:
         """Use serial port to perform homing sequence on given camera.
 
