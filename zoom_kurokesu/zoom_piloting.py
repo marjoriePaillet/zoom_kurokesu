@@ -131,13 +131,15 @@ class ZoomController:
 
         Given as many zoom and focus value as name in camera list,
         produce the corresponding G-code and send it over the serial port.
-        motors will move at once
-        zoom and focus at index i refer to camera at index i in list
+        Motors will move at once
+        Zoom and focus at index i refer to camera at index i in list
+        Give -1 value in focus or zoom list to not move
+        Zoom and focus list can contain both int and string values. 
 
         Args:
             camera: string list, can contain "left" and/or "right" value
-            zoom: int list between 0 and 600
-            zoom: int list between 0 and 600
+            zoom: list, can contain int value between -1 and 600 or focus/zoom level among 'in', 'inter' or 'out'
+            focus: list, can contain int value between -1 and 500 or focus/zoom level among 'in', 'inter' or 'out'
         """
         command = 'G1'
         if (len(camera) != len(zoom) or len(camera) != len(focus)):
@@ -150,7 +152,17 @@ class ZoomController:
             except KeyError:
                 success = False
                 raise ValueError(camera[i] + " camera name doesn't exist")
-            command += f' {mot["zoom"]}{zoom[i]} {mot["focus"]}{focus[i]} '
+
+            if focus[i] != -1:
+                if focus[i] in {"in", "inter", "out"}:
+                    command += f' {mot["focus"]}{self.zoom_pos[camera[i]][focus[i]]["focus"]} '
+                else:
+                    command += f' {mot["focus"]}{focus[i]} '
+            if zoom[i] != -1:
+                if zoom[i] in {"in", "inter", "out"}:
+                    command += f' {mot["zoom"]}{self.zoom_pos[camera[i]][zoom[i]]["zoom"]} '
+                else :
+                    command += f' {mot["zoom"]}{zoom[i]} '
 
         if success:
             command += f'F{self.speed}'
